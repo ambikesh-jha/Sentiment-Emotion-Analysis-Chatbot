@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot</title>
+    <style>
+        /* General styling */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f4f4f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Chat container */
+        .chat-container {
+            width: 90%;
+            max-width: 600px;
+            background: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .chat-header {
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+
+        /* Message area */
+        .message-area {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 75%;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            background: #d1e7dd;
+            align-self: flex-end;
+            text-align: right;
+        }
+
+        .bot-message {
+            background: #fff3cd;
+            align-self: flex-start;
+        }
+
+        /* Loading animation in chat area */
+        .loading-indicator {
+            display: none;
+            text-align: center;
+            align-self: center;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Input area */
+        .input-area {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: #f4f4f9;
+            border-top: 1px solid #ddd;
+        }
+
+        .input-area textarea {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            resize: none;
+            height: 50px;
+            font-size: 1rem;
+        }
+
+        .input-area button {
+            margin-left: 10px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .input-area button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .input-area button:hover:not(:disabled) {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">AI Chatbot</div>
+
+        <!-- Message Area -->
+        <div class="message-area" id="messageArea">
+            <!-- Messages will appear here -->
+            <div class="loading-indicator" id="loading">
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <textarea id="question" placeholder="Type your message..."></textarea>
+            <button id="submit">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const messageArea = document.getElementById('messageArea');
+        const questionInput = document.getElementById('question');
+        const submitButton = document.getElementById('submit');
+        const loadingIndicator = document.getElementById('loading');
+
+        submitButton.addEventListener('click', () => {
+            const question = questionInput.value.trim();
+
+            if (!question) {
+                alert("Please enter a message!");
+                return;
+            }
+
+            // Display user message
+            appendMessage(question, 'user');
+
+            // Disable input and show loader
+            submitButton.disabled = true;
+            questionInput.disabled = true;
+            loadingIndicator.style.display = 'block';
+
+            // Send request to the server
+            fetch('/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    appendMessage(data.error, 'bot');
+                } else {
+                    appendMessage(data.answer, 'bot');
+                }
+            })
+            .catch(() => {
+                appendMessage("An error occurred. Please try again.", 'bot');
+            })
+            .finally(() => {
+                // Re-enable input and hide loader
+                submitButton.disabled = false;
+                questionInput.disabled = false;
+                loadingIndicator.style.display = 'none';
+                questionInput.value = '';
+            });
+        });
+
+        // Function to append messages to the chat
+        function appendMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
+            messageDiv.textContent = text;
+            messageArea.insertBefore(messageDiv, loadingIndicator);
+            messageArea.scrollTop = messageArea.scrollHeight;
+        }
+    </script>
+</body>
+</html>
